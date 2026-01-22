@@ -8,9 +8,6 @@ const errorMiddleware = require("./middlewares/error.middleware");
 
 const app = express();
 
-const setupRoutes = require("./routes/setup.routes");
-app.use("/setup", setupRoutes);
-
 app.use(express.json());
 
 
