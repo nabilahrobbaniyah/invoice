@@ -1,12 +1,30 @@
-import express from 'express';
+const express = require("express");
+const session = require("express-session");
+const env = require("../config/env");
+
+const authRoutes = require("./routes/auth.routes");
+const clientRoutes = require("./routes/clients.routes");
+const errorMiddleware = require("./middlewares/error.middleware");
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok' });
-});
+const setupRoutes = require("./routes/setup.routes");
+app.use("/setup", setupRoutes);
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+app.use(express.json());
+
+
+app.use(session({
+  secret: env.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false
+}));
+
+app.use("/auth", authRoutes);
+app.use("/clients", clientRoutes);
+
+app.use(errorMiddleware);
+
+app.listen(env.PORT, () => {
+  console.log("Server running on port", env.PORT);
 });
