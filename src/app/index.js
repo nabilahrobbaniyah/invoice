@@ -5,6 +5,7 @@ const env = require("../config/env");
 const authRoutes = require("./routes/auth.routes");
 const clientRoutes = require("./routes/clients.routes");
 const errorMiddleware = require("./middlewares/error.middleware");
+const invoiceRoutes = require("./routes/invoices.routes");
 
 const app = express();
 
@@ -19,6 +20,7 @@ app.use(session({
 
 app.use("/auth", authRoutes);
 app.use("/clients", clientRoutes);
+app.use("/invoices", invoiceRoutes);
 
 app.use(errorMiddleware);
 
