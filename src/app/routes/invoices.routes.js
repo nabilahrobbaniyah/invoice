@@ -11,6 +11,7 @@ router.use(auth);
 router.post("/", invoiceController.createInvoice);
 router.get("/", invoiceController.getInvoices);
 router.get("/:id", invoiceController.getInvoiceById);
+router.patch("/:id/status", invoiceController.updateStatus);
 
 // items
 router.post("/:id/items", itemController.addItem);

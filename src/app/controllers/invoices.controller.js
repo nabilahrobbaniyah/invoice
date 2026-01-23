@@ -1,11 +1,13 @@
 const pool = require("../../db/mysql");
 const { v4: uuidv4 } = require("uuid");
+const { updateInvoiceStatus } = require("../services/invoiceStatus.service");
 const { success, error } = require("../utils/response");
-
 /*
 1. createInvoice - POST /invoices
 2. getInvoices - GET /invoices
 3. getInvoiceById - GET /invoices/:id
+4. updateStatus - PATCH /invoices/:id/status
+5. listInvoices - GET /invoices?page=
 */
 
 async function createInvoice(req, res) {
@@ -53,22 +55,59 @@ async function getInvoices(req, res) {
 async function getInvoiceById(req, res) {
   const { id } = req.params;
 
-  const [rows] = await pool.query(
-    `SELECT id, client_id, invoice_date, status, total_amount
-     FROM invoices
-     WHERE id = ? AND user_id = ?`,
+  const [invoices] = await pool.query(
+    "SELECT * FROM invoices WHERE id = ? AND user_id = ?",
     [id, req.session.userId]
   );
 
-  if (rows.length === 0) {
+  if (invoices.length === 0) {
     return error(res, 404, "Invoice tidak ditemukan");
   }
 
-  return success(res, rows[0]);
+  const [items] = await pool.query(
+    "SELECT * FROM invoice_items WHERE invoice_id = ?",
+    [id]
+  );
+
+  return success(res, {
+    ...invoices[0],
+    items
+  });
+}
+
+async function updateStatus(req, res) {
+  const { id } = req.params;
+  const { status } = req.body;
+
+  if (!["draft", "sent", "paid"].includes(status)) {
+    return error(res, 400, "Status tidak valid");
+  }
+
+  try {
+    await updateInvoiceStatus(id, req.session.userId, status);
+    return success(res, null, "Status diperbarui");
+  } catch (err) {
+    return error(res, err.status || 500, err.message || "Gagal update status");
+  }
+}
+
+async function listInvoices(req, res) {
+  const page = parseInt(req.query.page) || 1;
+  const limit = 10;
+  const offset = (page - 1) * limit;
+
+  const [rows] = await pool.query(
+    "SELECT id, invoice_date, status, total_amount FROM invoices WHERE user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?",
+      [req.session.userId, limit, offset]
+    );
+
+    return success(res, rows);
 }
 
 module.exports = {
   createInvoice,
   getInvoices,
-  getInvoiceById
+  getInvoiceById,
+  updateStatus,
+  listInvoices
 };
