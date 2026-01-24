@@ -38,20 +38,6 @@ async function createInvoice(req, res) {
   return success(res, { id }, "Invoice draft dibuat");
 }
 
-async function getInvoices(req, res) {
-  const [rows] = await pool.query(
-    `SELECT i.id, i.invoice_date, i.status, i.total_amount,
-            c.name AS client_name
-     FROM invoices i
-     JOIN clients c ON c.id = i.client_id
-     WHERE i.user_id = ?
-     ORDER BY i.invoice_date DESC`,
-    [req.session.userId]
-  );
-
-  return success(res, rows);
-}
-
 async function getInvoiceById(req, res) {
   const { id } = req.params;
 
@@ -91,13 +77,14 @@ async function updateStatus(req, res) {
   }
 }
 
-async function listInvoices(req, res) {
+async function getInvoices(req, res) {
+  console.log("Listing invoices with pagination", req.query);
   const page = parseInt(req.query.page) || 1;
   const limit = 10;
   const offset = (page - 1) * limit;
 
   const [rows] = await pool.query(
-    "SELECT id, invoice_date, status, total_amount FROM invoices WHERE user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?",
+    "SELECT i.id, i.invoice_date, i.status, i.total_amount, c.name AS client_name FROM invoices i JOIN clients c ON c.id = i.client_id WHERE i.user_id = ? ORDER BY i.created_at DESC LIMIT ? OFFSET ?",
       [req.session.userId, limit, offset]
     );
 
@@ -106,8 +93,7 @@ async function listInvoices(req, res) {
 
 module.exports = {
   createInvoice,
-  getInvoices,
   getInvoiceById,
   updateStatus,
-  listInvoices
+  getInvoices
 };
