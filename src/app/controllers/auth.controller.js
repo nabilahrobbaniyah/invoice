@@ -1,5 +1,5 @@
-const pool = require("../../db/mysql");
 const bcrypt = require("bcrypt");
+const pool = require("../../db/mysql");
 const { success, error } = require("../utils/response");
 
 async function login(req, res) {
@@ -10,37 +10,45 @@ async function login(req, res) {
   }
 
   const [rows] = await pool.query(
-    "SELECT id, email, password_hash FROM users WHERE email = ?",
+    "SELECT id, password_hash FROM users WHERE email = ?",
     [email]
   );
 
   if (rows.length === 0) {
-    return error(res, 401, "Login gagal");
+    return error(res, 401, "Email atau password salah");
   }
 
   const user = rows[0];
-  const valid = await bcrypt.compare(password, user.password_hash);
+  const match = await bcrypt.compare(password, user.password_hash);
 
-  if (!valid) {
-    return error(res, 401, "Login gagal");
+  if (!match) {
+    return error(res, 401, "Email atau password salah");
   }
 
-  // INI KUNCI UTAMA
-  req.session.userId = user.id;
+  req.session.regenerate(err => {
+    if (err) {
+      return error(res, 500, "Gagal membuat session");
+    }
 
-  console.log("LOGIN SESSION:", req.session);
-
-  return success(res, { id: user.id, email: user.email }, "Login sukses");
-}
-
-async function logout(req, res) {
-  req.session.destroy(() => {
-    res.clearCookie("sid");
-    return success(res, null, "Logout sukses");
+    req.session.userId = user.id;
+    return success(res, null, "Login berhasil");
   });
 }
 
-async function me(req, res) {
+function logout(req, res) {
+  req.session.destroy(err => {
+    if (err) {
+      return error(res, 500, "Gagal logout");
+    }
+    res.clearCookie("invoice.sid");
+    return success(res, null, "Logout berhasil");
+  });
+}
+
+function me(req, res) {
+  if (!req.session.userId) {
+    return error(res, 401, "Unauthorized");
+  }
   return success(res, { userId: req.session.userId });
 }
 

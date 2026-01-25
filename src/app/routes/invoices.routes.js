@@ -1,9 +1,9 @@
 const express = require("express");
-const router = express.Router();
 const auth = require("../middlewares/auth.middleware");
-
 const invoiceController = require("../controllers/invoices.controller");
 const itemController = require("../controllers/invoiceItems.controller");
+
+const router = express.Router();
 
 router.use(auth);
 
