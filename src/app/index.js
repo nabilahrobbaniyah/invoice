@@ -5,6 +5,7 @@ const env = require("../config/env");
 const authRoutes = require("./routes/auth.routes");
 const clientRoutes = require("./routes/clients.routes");
 const invoiceRoutes = require("./routes/invoices.routes");
+const dashboardRoutes = require("./routes/dashboard.routes");
 const errorMiddleware = require("./middlewares/error.middleware");
 const app = express();
 
@@ -25,18 +26,27 @@ app.use(
   })
 );
 
-// DEBUG sementara
+// Debug session
 app.use((req, res, next) => {
   console.log("SESSION DEBUG:", req.session);
   next();
 });
 
+app.get("/ping", (req, res) => {
+  res.json({ ok: true });
+});
+
+// Routes
 app.use("/auth", authRoutes);
 app.use("/clients", clientRoutes);
 app.use("/invoices", invoiceRoutes);
+app.use("/dashboard", dashboardRoutes);
 
+// Error handler HARUS terakhir
 app.use(errorMiddleware);
 
 app.listen(env.PORT, () => {
   console.log("Server running on port", env.PORT);
 });
+
+module.exports = app;

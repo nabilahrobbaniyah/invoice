@@ -1,55 +1,57 @@
-const bcrypt = require("bcrypt");
 const pool = require("../../db/mysql");
-const { success, error } = require("../utils/response");
+const bcrypt = require("bcrypt");
 
-async function login(req, res) {
-  const { email, password } = req.body;
+async function login(req, res, next) {
+  try {
+    const { email, password } = req.body;
 
-  if (!email || !password) {
-    return error(res, 400, "Email dan password wajib");
-  }
+    const [rows] = await pool.query(
+      "SELECT id, password_hash FROM users WHERE email = ?",
+      [email]
+    );
 
-  const [rows] = await pool.query(
-    "SELECT id, password_hash FROM users WHERE email = ?",
-    [email]
-  );
+    if (rows.length === 0) {
+      return res.status(401).json({
+        success: false,
+        message: "Email atau password salah"
+      });
+    }
 
-  if (rows.length === 0) {
-    return error(res, 401, "Email atau password salah");
-  }
+    const user = rows[0];
+    const match = await bcrypt.compare(password, user.password_hash);
 
-  const user = rows[0];
-  const match = await bcrypt.compare(password, user.password_hash);
-
-  if (!match) {
-    return error(res, 401, "Email atau password salah");
-  }
-
-  req.session.regenerate(err => {
-    if (err) {
-      return error(res, 500, "Gagal membuat session");
+    if (!match) {
+      return res.status(401).json({
+        success: false,
+        message: "Email atau password salah"
+      });
     }
 
     req.session.userId = user.id;
-    return success(res, null, "Login berhasil");
-  });
+
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
 }
 
 function logout(req, res) {
-  req.session.destroy(err => {
-    if (err) {
-      return error(res, 500, "Gagal logout");
-    }
-    res.clearCookie("invoice.sid");
-    return success(res, null, "Logout berhasil");
+  req.session.destroy(() => {
+    res.json({ success: true });
   });
 }
 
 function me(req, res) {
-  if (!req.session.userId) {
-    return error(res, 401, "Unauthorized");
-  }
-  return success(res, { userId: req.session.userId });
+  res.json({
+    success: true,
+    user: {
+      id: req.user.id
+    }
+  });
 }
 
-module.exports = { login, logout, me };
+module.exports = {
+  login,
+  logout,
+  me
+};

@@ -1,5 +1,5 @@
 const express = require("express");
-const auth = require("../middlewares/auth.middleware");
+const { auth } = require("../middlewares/auth.middleware");
 const invoiceController = require("../controllers/invoices.controller");
 const itemController = require("../controllers/invoiceItems.controller");
 

@@ -1,10 +1,14 @@
-const { error } = require("../utils/response");
-
 function auth(req, res, next) {
   if (!req.session || !req.session.userId) {
-    return error(res, 401, "Unauthorized");
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized"
+    });
   }
+  req.user = { id: req.session.userId };
   next();
 }
 
-module.exports = auth;
+module.exports = {
+  auth
+};
