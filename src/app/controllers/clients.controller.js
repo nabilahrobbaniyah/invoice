@@ -10,36 +10,37 @@ const { success, error } = require("../utils/response");
 5. remove - DELETE /clients/:id
 */
 
-async function getAll(req, res, next) {
-  try {
-    const pageRaw = parseInt(req.query.page, 10);
-    const page = Number.isInteger(pageRaw) && pageRaw > 0 ? pageRaw : 1;
-    const limit = 10;
-    const offset = (page - 1) * limit;
-    console.log("controller getAll sort =", req.query.sort);
-    const SORT_MAP = {
-      name: "clients.name",
-      created_at: "clients.created_at"
-    };
+async function getAll(req, res) {
+  const page = parseInt(req.query.page) || 1;
+  const limit = 10;
+  const offset = (page - 1) * limit;
 
-    const sortKey = req.query.sort || "name";
-    const orderBy = SORT_MAP[sortKey];
+  const sortMap = {
+    name: "name",
+    created_at: "created_at"
+  };
 
-    const [rows] = await pool.query(
-      `
-      SELECT id, name, email, phone
-      FROM clients
-      WHERE user_id = ?
-      ORDER BY ${orderBy} ASC, id ASC
-      LIMIT ? OFFSET ?
-      `,
-      [req.session.userId, limit, offset]
-    );
+  const sort = req.query.sort || "name";
+  const order = req.query.order || "asc";
 
-    return success(res, rows);
-  } catch (err) {
-    next(err);
-  }
+  const sortField = sortMap[sort];
+  const sortOrder = order.toUpperCase();
+
+  const sql = `
+    SELECT id, name, email, phone
+    FROM clients
+    WHERE user_id = ?
+    ORDER BY ${sortField} ${sortOrder}
+    LIMIT ? OFFSET ?
+  `;
+
+  const [rows] = await pool.query(sql, [
+    req.session.userId,
+    limit,
+    offset
+  ]);
+
+  return success(res, rows);
 }
 
 async function detail(req, res) {
