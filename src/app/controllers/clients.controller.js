@@ -10,18 +10,37 @@ const { success, error } = require("../utils/response");
 5. remove - DELETE /clients/:id
 */
 
-async function getAll(req, res) {
-  const page = parseInt(req.query.page) || 1;
-  const limit = 10;
-  const offset = (page - 1) * limit;
+async function getAll(req, res, next) {
+  try {
+    const pageRaw = parseInt(req.query.page, 10);
+    const page = Number.isInteger(pageRaw) && pageRaw > 0 ? pageRaw : 1;
+    const limit = 10;
+    const offset = (page - 1) * limit;
+    console.log("controller getAll sort =", req.query.sort);
+    const SORT_MAP = {
+      name: "clients.name",
+      created_at: "clients.created_at"
+    };
 
-  const [rows] = await pool.query(
-  "SELECT id, name, email, phone FROM clients WHERE user_id = ? ORDER BY name ASC LIMIT ? OFFSET ?",
-  [req.session.userId, limit, offset]
-  );
+    const sortKey = req.query.sort || "name";
+    const orderBy = SORT_MAP[sortKey];
 
-  return success(res, rows);
+    const [rows] = await pool.query(
+      `
+      SELECT id, name, email, phone
+      FROM clients
+      WHERE user_id = ?
+      ORDER BY ${orderBy} ASC, id ASC
+      LIMIT ? OFFSET ?
+      `,
+      [req.session.userId, limit, offset]
+    );
+
+    return success(res, rows);
+  } catch (err) {
+    next(err);
   }
+}
 
 async function detail(req, res) {
   const { id } = req.params;

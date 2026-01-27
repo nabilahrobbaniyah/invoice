@@ -1,5 +1,8 @@
 const dashboardService = require("../services/dashboard.services");
 
+/* 
+  GET /api/dashboard/summary
+*/
 module.exports = {
   getSummary: async function (req, res, next) {
     try {
