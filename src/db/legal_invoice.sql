@@ -1,7 +1,41 @@
-use legal_invoice
-SELECT id, email, password_hash FROM users;
-DELETE FROM users WHERE email = 'admin@test.com'
-\\pw:admin123legal_invoice
+CREATE TABLE users (
+id CHAR(36) PRIMARY KEY,
+email VARCHAR(255) NOT NULL UNIQUE,
+password_hash VARCHAR(255) NOT NULL,
+created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE clients (
+id CHAR(36) PRIMARY KEY,
+user_id CHAR(36) NOT NULL,
+name VARCHAR(255) NOT NULL,
+email VARCHAR(255),
+phone VARCHAR(50),
+address TEXT,
+created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+CONSTRAINT fk_clients_user
+FOREIGN KEY (user_id) REFERENCES users(id)
+ON DELETE CASCADE
+);
+
+CREATE TABLE invoices (
+id CHAR(36) PRIMARY KEY,
+user_id CHAR(36) NOT NULL,
+client_id CHAR(36) NOT NULL,
+invoice_date DATE NOT NULL,
+status ENUM('draft', 'sent', 'paid') NOT NULL,
+total_amount DECIMAL(14,2) NOT NULL DEFAULT 0,
+created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+CONSTRAINT fk_invoices_user
+FOREIGN KEY (user_id) REFERENCES users(id)
+ON DELETE CASCADE,
+CONSTRAINT fk_invoices_client
+FOREIGN KEY (client_id) REFERENCES clients(id)
+ON DELETE RESTRICT
+);
 
 CREATE TABLE invoice_items (
 id CHAR(36) PRIMARY KEY,
@@ -10,17 +44,13 @@ description VARCHAR(255) NOT NULL,
 quantity INT NOT NULL,
 unit_price DECIMAL(14,2) NOT NULL,
 subtotal DECIMAL(14,2) NOT NULL,
-
 CONSTRAINT fk_items_invoice
 FOREIGN KEY (invoice_id) REFERENCES invoices(id)
 ON DELETE CASCADE,
-
 CONSTRAINT chk_quantity_positive
 CHECK (quantity > 0),
-
 CONSTRAINT chk_price_positive
 CHECK (unit_price > 0),
-
 CONSTRAINT chk_subtotal_positive
 CHECK (subtotal >= 0)
 );
